@@ -17,7 +17,9 @@ pub trait VectorStore {
 }
 
 pub struct QdrantConnector {
+    #[allow(dead_code)]
     url: String,
+    #[allow(dead_code)]
     timeout: Duration,
 }
 

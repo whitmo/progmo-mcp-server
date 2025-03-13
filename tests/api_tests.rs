@@ -37,7 +37,8 @@ mod api_tests {
         
         assert_eq!(create_response.status().as_u16(), 201);
         
-        let entry_id: String = create_response.json().await.expect("Failed to parse response");
+        let entry_id: String = create_response.text().await.expect("Failed to get response text")
+            .trim_matches('"').to_string();
         
         // Test retrieving the entry
         let get_response = client.get(format!("http://127.0.0.1:8082/api/knowledge/{}", entry_id))

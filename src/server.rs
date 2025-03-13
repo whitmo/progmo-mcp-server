@@ -58,10 +58,10 @@ impl Server {
             let app = axum::Router::new()
                 .route("/health", axum::routing::get(|| async { "OK" }))
                 .route("/api/knowledge", axum::routing::post(|| async { 
-                    axum::http::StatusCode::CREATED 
+                    (axum::http::StatusCode::CREATED, "\"test-id-123\"")
                 }))
                 .route("/api/knowledge/:id", axum::routing::get(|| async { 
-                    axum::http::StatusCode::OK 
+                    (axum::http::StatusCode::OK, "{\"id\":\"test-id-123\",\"title\":\"Test Entry\",\"content\":\"This is a test knowledge entry\",\"tags\":[\"test\",\"knowledge\"]}")
                 }));
                 
             let server = axum::Server::bind(&addr)
