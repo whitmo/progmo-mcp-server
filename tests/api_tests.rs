@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod api_tests {
     use p_mo::server::{Server, ServerConfig};
-    use reqwest::blocking::Client;
+    use reqwest::Client;
     use serde_json::json;
     use std::time::Duration;
 
@@ -32,15 +32,17 @@ mod api_tests {
         let create_response = client.post("http://127.0.0.1:8082/api/knowledge")
             .json(&entry)
             .send()
+            .await
             .expect("Failed to send create request");
         
         assert_eq!(create_response.status().as_u16(), 201);
         
-        let entry_id: String = create_response.json().expect("Failed to parse response");
+        let entry_id: String = create_response.json().await.expect("Failed to parse response");
         
         // Test retrieving the entry
         let get_response = client.get(format!("http://127.0.0.1:8082/api/knowledge/{}", entry_id))
             .send()
+            .await
             .expect("Failed to send get request");
         
         assert_eq!(get_response.status().as_u16(), 200);

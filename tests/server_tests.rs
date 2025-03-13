@@ -2,7 +2,7 @@
 mod server_tests {
     use p_mo::server::{Server, ServerConfig};
     use std::time::Duration;
-    use reqwest::blocking::Client;
+    use reqwest::Client;
 
     #[tokio::test]
     async fn test_server_health_check() {
@@ -24,6 +24,7 @@ mod server_tests {
         let response = client.get("http://127.0.0.1:8080/health")
             .timeout(Duration::from_secs(5))
             .send()
+            .await
             .expect("Failed to send request");
         
         // Verify 200 OK response

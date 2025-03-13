@@ -30,6 +30,10 @@ pub struct ServerHandle {
 impl ServerHandle {
     pub async fn shutdown(self) -> Result<(), ServerError> {
         let _ = self.shutdown_tx.send(());
+        // Wait for the server task to complete
+        if let Err(e) = self.task.await {
+            eprintln!("Error joining server task: {:?}", e);
+        }
         Ok(())
     }
 }

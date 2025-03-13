@@ -37,13 +37,13 @@ impl VectorStore for QdrantConnector {
         Ok(())
     }
     
-    fn create_collection(&self, name: &str, vector_size: usize) -> Result<(), VectorStoreError> {
+    fn create_collection(&self, _name: &str, _vector_size: usize) -> Result<(), VectorStoreError> {
         // In a real implementation, this would create a collection in Qdrant
         // For testing purposes, we'll just return Ok
         Ok(())
     }
     
-    fn delete_collection(&self, name: &str) -> Result<(), VectorStoreError> {
+    fn delete_collection(&self, _name: &str) -> Result<(), VectorStoreError> {
         // In a real implementation, this would delete a collection from Qdrant
         // For testing purposes, we'll just return Ok
         Ok(())
