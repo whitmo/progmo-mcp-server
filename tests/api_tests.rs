@@ -1,13 +1,12 @@
 #[cfg(test)]
 mod api_tests {
     use p_mo::server::{Server, ServerConfig};
-    use p_mo::api::models::{KnowledgeEntry, QueryResponse};
     use reqwest::blocking::Client;
     use serde_json::json;
     use std::time::Duration;
 
-    #[test]
-    fn test_api_basic_operations() {
+    #[tokio::test]
+    async fn test_api_basic_operations() {
         // Start server
         let config = ServerConfig {
             host: "127.0.0.1".to_string(),
@@ -16,10 +15,10 @@ mod api_tests {
         };
         
         let server = Server::new(config);
-        let handle = server.start().expect("Failed to start server");
+        let handle = server.start().await.expect("Failed to start server");
         
         // Give the server a moment to start
-        std::thread::sleep(Duration::from_millis(100));
+        tokio::time::sleep(Duration::from_millis(100)).await;
         
         let client = Client::new();
         
@@ -47,6 +46,6 @@ mod api_tests {
         assert_eq!(get_response.status().as_u16(), 200);
         
         // Cleanup
-        handle.shutdown().expect("Failed to shutdown server");
+        handle.shutdown().await.expect("Failed to shutdown server");
     }
 }

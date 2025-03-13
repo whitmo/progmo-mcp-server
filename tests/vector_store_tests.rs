@@ -3,8 +3,8 @@ mod vector_store_tests {
     use p_mo::vector_store::{QdrantConnector, VectorStore};
     use std::time::Duration;
 
-    #[test]
-    fn test_qdrant_connection() {
+    #[tokio::test]
+    async fn test_qdrant_connection() {
         // Skip test if QDRANT_URL environment variable is not set
         let qdrant_url = match std::env::var("QDRANT_URL") {
             Ok(url) => url,

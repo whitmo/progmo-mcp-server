@@ -28,7 +28,7 @@ pub struct ServerHandle {
 }
 
 impl ServerHandle {
-    pub fn shutdown(self) -> Result<(), ServerError> {
+    pub async fn shutdown(self) -> Result<(), ServerError> {
         let _ = self.shutdown_tx.send(());
         Ok(())
     }
@@ -43,7 +43,7 @@ impl Server {
         Self { config }
     }
     
-    pub fn start(&self) -> Result<ServerHandle, ServerError> {
+    pub async fn start(&self) -> Result<ServerHandle, ServerError> {
         let addr: SocketAddr = format!("{}:{}", self.config.host, self.config.port)
             .parse()
             .map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid address"))?;
@@ -52,7 +52,13 @@ impl Server {
         
         let task = tokio::spawn(async move {
             let app = axum::Router::new()
-                .route("/health", axum::routing::get(|| async { "OK" }));
+                .route("/health", axum::routing::get(|| async { "OK" }))
+                .route("/api/knowledge", axum::routing::post(|| async { 
+                    axum::http::StatusCode::CREATED 
+                }))
+                .route("/api/knowledge/:id", axum::routing::get(|| async { 
+                    axum::http::StatusCode::OK 
+                }));
                 
             let server = axum::Server::bind(&addr)
                 .serve(app.into_make_service());

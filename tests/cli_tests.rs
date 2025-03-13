@@ -2,10 +2,9 @@
 mod cli_tests {
     use p_mo::cli::{Cli, Command};
     use std::time::Duration;
-    use std::thread;
 
-    #[test]
-    fn test_cli_server_control() {
+    #[tokio::test]
+    async fn test_cli_server_control() {
         // Create CLI instance
         let cli = Cli::new();
         
@@ -17,7 +16,7 @@ mod cli_tests {
         assert!(result.is_ok(), "Failed to start server: {:?}", result);
         
         // Give server time to start
-        thread::sleep(Duration::from_millis(100));
+        tokio::time::sleep(Duration::from_millis(100)).await;
         
         // Check server status
         let status = cli.execute(Command::Status).expect("Failed to get status");
@@ -28,7 +27,7 @@ mod cli_tests {
         assert!(stop_result.is_ok(), "Failed to stop server: {:?}", stop_result);
         
         // Verify server stopped
-        thread::sleep(Duration::from_millis(100));
+        tokio::time::sleep(Duration::from_millis(100)).await;
         let status_after = cli.execute(Command::Status).expect("Failed to get status");
         assert!(status_after.contains("stopped"), "Server should be stopped");
     }

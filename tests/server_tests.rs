@@ -4,8 +4,8 @@ mod server_tests {
     use std::time::Duration;
     use reqwest::blocking::Client;
 
-    #[test]
-    fn test_server_health_check() {
+    #[tokio::test]
+    async fn test_server_health_check() {
         // Create a server with test configuration
         let config = ServerConfig {
             host: "127.0.0.1".to_string(),
@@ -14,10 +14,10 @@ mod server_tests {
         };
         
         let server = Server::new(config);
-        let handle = server.start().expect("Failed to start server");
+        let handle = server.start().await.expect("Failed to start server");
         
         // Give the server a moment to start
-        std::thread::sleep(Duration::from_millis(100));
+        tokio::time::sleep(Duration::from_millis(100)).await;
         
         // Send request to health check endpoint
         let client = Client::new();
@@ -30,6 +30,6 @@ mod server_tests {
         assert_eq!(response.status().as_u16(), 200);
         
         // Cleanup
-        handle.shutdown().expect("Failed to shutdown server");
+        handle.shutdown().await.expect("Failed to shutdown server");
     }
 }
