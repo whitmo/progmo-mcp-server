@@ -20,11 +20,14 @@ pub enum Command {
 
 pub struct Cli {
     // Configuration and state
+    is_running: std::sync::atomic::AtomicBool,
 }
 
 impl Cli {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            is_running: std::sync::atomic::AtomicBool::new(false),
+        }
     }
     
     pub fn execute(&self, command: Command) -> Result<String, CliError> {
@@ -35,17 +38,26 @@ impl Cli {
                 let host = host.unwrap_or_else(|| "127.0.0.1".to_string());
                 let port = port.unwrap_or(8080);
                 
+                // Set server as running
+                self.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
+                
                 // Simulate starting server
                 Ok(format!("Server started on {}:{}", host, port))
             },
             Command::Stop => {
+                // Set server as stopped
+                self.is_running.store(false, std::sync::atomic::Ordering::SeqCst);
+                
                 // Simulate stopping server
                 Ok("Server stopped".to_string())
             },
             Command::Status => {
-                // Simulate checking status
-                // In tests, we'll control what this returns
-                Ok("Server is running".to_string())
+                // Check if server is running
+                if self.is_running.load(std::sync::atomic::Ordering::SeqCst) {
+                    Ok("Server is running".to_string())
+                } else {
+                    Ok("Server is stopped".to_string())
+                }
             }
         }
     }
