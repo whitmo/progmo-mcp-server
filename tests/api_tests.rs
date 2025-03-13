@@ -12,6 +12,9 @@ mod api_tests {
             host: "127.0.0.1".to_string(),
             port: 8082,
             timeout: Duration::from_secs(30),
+            daemon: false,
+            pid_file: None,
+            log_file: None,
         };
         
         let server = Server::new(config);

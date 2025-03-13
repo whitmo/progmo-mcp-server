@@ -13,6 +13,7 @@ pub enum Command {
     Start {
         host: Option<String>,
         port: Option<u16>,
+        daemon: bool,
     },
     Stop,
     Status,
@@ -32,7 +33,7 @@ impl Cli {
     
     pub fn execute(&self, command: Command) -> Result<String, CliError> {
         match command {
-            Command::Start { host, port } => {
+            Command::Start { host, port, daemon } => {
                 // In a real implementation, this would start the server
                 // For testing, we'll simulate it
                 let host = host.unwrap_or_else(|| "127.0.0.1".to_string());
@@ -41,8 +42,14 @@ impl Cli {
                 // Set server as running
                 self.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
                 
+                let daemon_msg = if daemon {
+                    " in daemon mode"
+                } else {
+                    ""
+                };
+                
                 // Simulate starting server
-                Ok(format!("Server started on {}:{}", host, port))
+                Ok(format!("Server started on {}:{}{}", host, port, daemon_msg))
             },
             Command::Stop => {
                 // Set server as stopped
