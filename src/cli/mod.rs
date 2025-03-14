@@ -1,6 +1,21 @@
 use clap::Parser;
 use std::path::PathBuf;
 
+pub use effects::CliError;
+
+pub struct Cli;
+
+impl Cli {
+    pub fn new() -> Self {
+        Cli
+    }
+
+    pub fn execute(&self, command: Command) -> Result<String, CliError> {
+        // Implement the command execution logic here
+        Ok(format!("Executed command: {:?}", command))
+    }
+}
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
