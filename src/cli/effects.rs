@@ -1,5 +1,5 @@
 use std::env;
-use crate::cli::{Args, CliError as ParseError};
+use crate::cli::{Args};
 use crate::config::Config;
 use std::path::PathBuf;
 use thiserror::Error;
@@ -17,7 +17,7 @@ pub enum CliError {
 }
 
 pub fn get_args_from_env() -> Result<Args, CliError> {
-    Args::parse(env::args())
+    Ok(Args::parse())
 }
 
 pub fn load_config(path: &PathBuf) -> Result<Config, CliError> {

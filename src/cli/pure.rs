@@ -6,19 +6,19 @@ pub enum Command {
     Start {
         /// Host address to bind to
         #[arg(short, long)]
-        pub host: Option<String>,
+        host: Option<String>,
 
         /// Port to listen on
         #[arg(short, long)]
-        pub port: Option<u16>,
+        port: Option<u16>,
 
         /// Run in daemon mode
         #[arg(short, long)]
-        pub daemon: bool,
+        daemon: bool,
 
         /// Path to config file
         #[arg(short, long)]
-        pub config_path: Option<PathBuf>,
+        config_path: Option<PathBuf>,
     },
 
     /// Stop the server
@@ -31,7 +31,7 @@ pub enum Command {
     InitConfig {
         /// Path to create config file
         #[arg(short, long)]
-        pub config_path: Option<PathBuf>,
+        config_path: Option<PathBuf>,
     },
 }
 
