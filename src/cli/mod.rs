@@ -18,7 +18,7 @@ impl Cli {
         }
     }
 
-    pub fn execute(&self, command: Command) -> Result<String, CliError> {
+    pub fn execute(&mut self, command: Command) -> Result<String, CliError> {
         match command {
             Command::Start { host, port, daemon, config_path } => {
                 // If config_path is provided, load it to get host/port
