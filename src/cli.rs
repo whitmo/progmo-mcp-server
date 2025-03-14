@@ -1,5 +1,6 @@
 use thiserror::Error;
 use std::path::PathBuf;
+use crate::config::Config;
 
 #[derive(Debug, Error)]
 pub enum CliError {
