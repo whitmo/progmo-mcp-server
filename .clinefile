@@ -1,0 +1,76 @@
+# Psiome Development Guidelines
+version: 1.0
+
+_generally follow john ousterhout's a Philosophy of Software Design_
+
+# Code Quality Standards
+code_standards:
+  style:
+    - modular: "Prefer small, focused modules with clear responsibilities"
+    - concise: "Write minimal, expressive code without unnecessary complexity"
+    - testable: "Design for testability from the beginning"
+	- disposable and composable: "things should be easy to throw away once they are not fit for purpose, and things should be easy to change as new requirements become apparent"
+
+  comments:
+    - purpose: "Only document non-obvious logic or design decisions"
+    - api_docs: "Thoroughly document public APIs and interfaces"
+    - avoid: "No redundant comments that simply restate the code"
+
+
+
+# Development Workflow
+workflow:
+  new_features:
+    - pr_first: "Start each new feature/fix/journey with a PR draft and a new branch"
+    - branch: "Create a feature branch from main using format 'feature/descriptive-name'"
+    - plan and document: "Document implementation plan with operational considerations (product operations including technical)"
+    - tests: "Write minimum acceptance/smoke tests before implementing a minimal part of the complete process"
+	- iterate: "Build up to a complete implementation piece by piece even if it requires several passes."
+    - pr: "Complete the PR with comprehensive description of changes"
+
+  completion_criteria:
+    - tests: "100% code coverage with meaningful unit tests"
+    - docs:
+        - technical: "Implementation details for developers"
+        - operational: "Usage guides, health metrics, and SLOs"
+    - review: "Code review by at least one team member"
+
+# Architecture Principles
+architecture:
+  - information_hiding: "Create clean APIs that hide implementation details"
+  - loose_coupling: "Minimize dependencies between components"
+  - simplicity: "Prefer simple solutions over complex ones"
+  - maintainability: "Design for future maintenance and extension"
+
+# Documentation Standards
+documentation:
+  - code: "Self-documenting where possible"
+  - current projects: /docs/project/{YYYYMM}-{name}
+  - current resources: /docs/resources
+  - technical: "Located in docs/resources/tech/ directory"
+  - operational: "Located in docs/resources/ops/ directory"
+  - test_plans: "Located in docs/resources/testplans/ with timestamp prefix"
+  - adrs: "Architecture Decision Records in docs/adr/ for major changes"
+  - documentation driven development: "Write down why, what and how we will build software before executing on what and how"
+
+
+# Architecture Decision Records
+adrs:
+  - decisions: "Anything future developer may say 'why did this happen' later"
+  - major_dependencies: "Document changes to major dependencies"
+  - architectural_patterns: "Document changes to architectural patterns"
+  - integration_patterns: "Document new integration patterns"
+  - database_schemas: "Document database schema changes"
+  - template: "Follow template in docs/adr/template.md"
+
+# Technology-Specific Guidelines
+technology:
+ - use rust
+ - use make and shell
+
+# Wabi-Sabi Philosophy
+philosophy:
+  - continuous_refinement: "Embrace iterative improvement while maintaining simplicity"
+  - pragmatic_elegance: "Balance practical solutions with elegant design"
+  - focus_on_impact: "Prioritize changes that deliver the most value"
+  - embrace_imperfection: "Accept that perfect is the enemy of good"

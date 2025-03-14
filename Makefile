@@ -2,7 +2,7 @@
 
 # Test all packages
 test:
-	cargo test --workspace
+	cargo -q test --workspace
 
 # Run unit tests only
 test-unit:
