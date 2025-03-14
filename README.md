@@ -1,5 +1,7 @@
 # [p]rog[mo]
 
+[![Coverage Status](https://codecov.io/gh/yourusername/progmo-mcp-server/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/progmo-mcp-server)
+
 _program more_
 
 An agent for handling out of band common coding tasks
