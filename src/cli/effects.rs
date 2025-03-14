@@ -1,5 +1,5 @@
 use std::env;
-use super::pure::{Args, ParseError};
+use crate::cli::{Args, CliError as ParseError};
 use crate::config::Config;
 use std::path::PathBuf;
 use thiserror::Error;
