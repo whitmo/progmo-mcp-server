@@ -1,3 +1,5 @@
+mod effects;
+
 use clap::Parser;
 use std::path::PathBuf;
 
