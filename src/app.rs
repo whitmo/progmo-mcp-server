@@ -24,7 +24,14 @@ impl App {
     pub fn execute(&mut self, command: Command) -> Result<String, CliError> {
         match command {
             Command::Start { host, port, daemon, config_path } => {
-                self.load_config(&config_path)?;
+                // Try to load config if path is provided
+                if let Some(path) = &config_path {
+                    if path.exists() {
+                        if let Ok(cfg) = Config::load(path) {
+                            self.config = Some(cfg);
+                        }
+                    }
+                }
                 
                 // Apply config overrides if provided
                 let config_host = host.or_else(|| {
