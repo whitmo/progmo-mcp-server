@@ -6,11 +6,16 @@ use clap::Parser;
 pub use effects::CliError;
 pub use pure::Command;
 
-pub struct Cli;
+pub struct Cli {
+    // Track server state for testing purposes
+    is_running: bool,
+}
 
 impl Cli {
     pub fn new() -> Self {
-        Cli
+        Cli {
+            is_running: false,
+        }
     }
 
     pub fn execute(&self, command: Command) -> Result<String, CliError> {
@@ -43,16 +48,23 @@ impl Cli {
                     )
                 };
                 
+                // Set server as running
+                self.is_running = true;
+                
                 let daemon_str = if daemon { " in daemon mode" } else { "" };
                 Ok(format!("{}:{}{}", host_str, port_num, daemon_str))
             },
             Command::Stop => {
+                self.is_running = false;
                 Ok("Server stopped".to_string())
             },
             Command::Status => {
-                // In a real implementation, we would check if the server is actually running
-                // For now, we'll just return "stopped" to make the test pass
-                Ok("Server status: stopped".to_string())
+                // Return status based on tracked state
+                if self.is_running {
+                    Ok("Server status: running".to_string())
+                } else {
+                    Ok("Server status: stopped".to_string())
+                }
             },
             Command::InitConfig { config_path } => {
                 // Actually create the config file
