@@ -12,6 +12,7 @@ mod cli_tests {
         let result = cli.execute(Command::Start {
             host: Some("127.0.0.1".to_string()),
             port: Some(8081),
+            daemon: false,
         });
         assert!(result.is_ok(), "Failed to start server: {:?}", result);
         

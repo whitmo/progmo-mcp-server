@@ -86,7 +86,7 @@ impl Server {
             
             // Redirect stdout/stderr to log file if specified
             if let Some(log_file) = &self.config.log_file {
-                let file = File::create(log_file)
+                let _file = File::create(log_file)
                     .map_err(|e| ServerError::DaemonError(format!("Failed to create log file: {}", e)))?;
                 // In a real implementation, we would redirect stdout/stderr to this file
                 // This is just a placeholder for demonstration
