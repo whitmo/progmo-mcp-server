@@ -21,9 +21,22 @@ pub struct SearchResult {
 
 // Pure functions for vector operations
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    let dot_product: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
-    let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
-    let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+    if a.len() != b.len() || a.is_empty() {
+        return 0.0;
+    }
+    
+    let mut dot_product = 0.0;
+    let mut norm_a = 0.0;
+    let mut norm_b = 0.0;
+    
+    for i in 0..a.len() {
+        dot_product += a[i] * b[i];
+        norm_a += a[i] * a[i];
+        norm_b += b[i] * b[i];
+    }
+    
+    norm_a = norm_a.sqrt();
+    norm_b = norm_b.sqrt();
     
     if norm_a == 0.0 || norm_b == 0.0 {
         0.0
@@ -48,6 +61,6 @@ mod tests {
         
         let e = vec![1.0, 1.0, 0.0];
         let f = vec![1.0, 0.0, 1.0];
-        assert!((cosine_similarity(&e, &f) - 0.7071).abs() < 0.0001);
+        assert!((cosine_similarity(&e, &f) - 0.5).abs() < 0.0001);
     }
 }
