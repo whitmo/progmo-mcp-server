@@ -6,6 +6,7 @@ use tokio::task::JoinHandle;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use crate::config;
 
 #[derive(Debug, Error)]
 pub enum ServerError {
@@ -40,6 +41,19 @@ impl Default for ServerConfig {
             daemon: false,
             pid_file: Some(PathBuf::from("/tmp/p-mo.pid")),
             log_file: Some(PathBuf::from("/tmp/p-mo.log")),
+        }
+    }
+}
+
+impl From<config::ServerConfig> for ServerConfig {
+    fn from(config: config::ServerConfig) -> Self {
+        Self {
+            host: config.host,
+            port: config.port,
+            timeout: Duration::from_secs(config.timeout_secs),
+            daemon: config.daemon,
+            pid_file: config.pid_file,
+            log_file: config.log_file,
         }
     }
 }

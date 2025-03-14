@@ -1,0 +1,20 @@
+# p-mo server configuration
+
+[server]
+# Server host address
+host = "127.0.0.1"
+
+# Server port
+port = 8080
+
+# Timeout in seconds
+timeout_secs = 30
+
+# Run as daemon
+daemon = false
+
+# PID file path (set to empty string to disable)
+pid_file = "/tmp/p-mo.pid"
+
+# Log file path (set to empty string to disable)
+log_file = "/tmp/p-mo.log"

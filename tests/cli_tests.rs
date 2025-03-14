@@ -13,6 +13,7 @@ mod cli_tests {
             host: Some("127.0.0.1".to_string()),
             port: Some(8081),
             daemon: false,
+            config_path: None,
         });
         assert!(result.is_ok(), "Failed to start server: {:?}", result);
         
