@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod cli_tests {
     use p_mo::cli::{Cli, Command};
+    use p_mo::config::Config;
     use std::time::Duration;
+    use std::fs;
+    use tempfile::TempDir;
 
     #[tokio::test]
     async fn test_cli_server_control() {
@@ -32,5 +35,28 @@ mod cli_tests {
         tokio::time::sleep(Duration::from_millis(100)).await;
         let status_after = cli.execute(Command::Status).expect("Failed to get status");
         assert!(status_after.contains("stopped"), "Server should be stopped");
+    }
+
+    #[test]
+    fn test_cli_config_override() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let config_path = temp_dir.path().join("test_config.toml");
+        
+        // Create a config file with default values
+        let config = Config::default();
+        config.save(&config_path).expect("Failed to save config");
+        
+        let cli = Cli::new();
+        
+        // Test that CLI arguments override config values
+        let result = cli.execute(Command::Start {
+            host: Some("0.0.0.0".to_string()),
+            port: Some(9000),
+            daemon: true,
+            config_path: Some(config_path),
+        }).expect("Failed to execute command");
+        
+        assert!(result.contains("0.0.0.0:9000"));
+        assert!(result.contains("daemon mode"));
     }
 }

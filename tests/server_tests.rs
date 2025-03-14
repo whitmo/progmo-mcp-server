@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod server_tests {
     use p_mo::server::{Server, ServerConfig};
+    use p_mo::config;
     use std::time::Duration;
     use reqwest::Client;
 
@@ -35,5 +36,24 @@ mod server_tests {
         
         // Cleanup
         handle.shutdown().await.expect("Failed to shutdown server");
+    }
+
+    #[tokio::test]
+    async fn test_server_config_conversion() {
+        let config_server = config::ServerConfig {
+            host: "0.0.0.0".to_string(),
+            port: 9000,
+            timeout_secs: 60,
+            daemon: true,
+            pid_file: None,
+            log_file: None,
+        };
+
+        let server_config: ServerConfig = config_server.into();
+        
+        assert_eq!(server_config.host, "0.0.0.0");
+        assert_eq!(server_config.port, 9000);
+        assert_eq!(server_config.timeout, Duration::from_secs(60));
+        assert!(server_config.daemon);
     }
 }
