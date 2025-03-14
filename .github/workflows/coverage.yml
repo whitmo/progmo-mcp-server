@@ -19,11 +19,8 @@ jobs:
 
       - name: Generate code coverage
         run: |
-          echo "Running tests..."
           make test
-          echo "Generating coverage report..."
           make coverage-html
-          echo "Current coverage stats:"
           make coverage
 
       - name: Upload coverage reports to Codecov

@@ -4,13 +4,13 @@
 test:
 	cargo test --workspace
 
-# Run coverage without failing on threshold
+# Run coverage report
 coverage:
-	cargo tarpaulin --verbose --workspace --no-fail-under
+	cargo tarpaulin --workspace
 
 # Run coverage with HTML report and 75% threshold
 coverage-html:
-	cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Html --fail-under 75
+	cargo tarpaulin --all-features --workspace --timeout 120 --out Html --fail-under 75
 
 # Clean build artifacts
 clean:
