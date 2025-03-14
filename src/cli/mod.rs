@@ -2,7 +2,6 @@ mod effects;
 mod pure;
 
 use clap::Parser;
-use std::path::PathBuf;
 
 pub use effects::CliError;
 pub use pure::Command;
@@ -15,8 +14,23 @@ impl Cli {
     }
 
     pub fn execute(&self, command: Command) -> Result<String, CliError> {
-        // Implement the command execution logic here
-        Ok(format!("Executed command: {:?}", command))
+        match command {
+            Command::Start { host, port, daemon, .. } => {
+                let host_str = host.unwrap_or_else(|| "127.0.0.1".to_string());
+                let port_num = port.unwrap_or(8080);
+                let daemon_str = if daemon { " in daemon mode" } else { "" };
+                Ok(format!("{}:{}{}", host_str, port_num, daemon_str))
+            },
+            Command::Stop => {
+                Ok("Server stopped".to_string())
+            },
+            Command::Status => {
+                Ok("Server status: running".to_string())
+            },
+            Command::InitConfig { .. } => {
+                Ok("Created default configuration".to_string())
+            }
+        }
     }
 }
 

@@ -1,4 +1,3 @@
-use std::env;
 use crate::cli::{Args};
 use crate::config::Config;
 use std::path::PathBuf;

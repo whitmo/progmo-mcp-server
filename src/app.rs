@@ -25,7 +25,24 @@ impl App {
         match command {
             Command::Start { host, port, daemon, config_path } => {
                 self.load_config(&config_path)?;
-                self.cli.execute(Command::Start { host, port, daemon, config_path })
+                
+                // Apply config overrides if provided
+                let config_host = host.or_else(|| {
+                    self.config.as_ref().map(|c| c.server.host.clone())
+                });
+                
+                let config_port = port.or_else(|| {
+                    self.config.as_ref().map(|c| c.server.port)
+                });
+                
+                let daemon_mode = daemon || self.config.as_ref().map_or(false, |c| c.server.daemon);
+                
+                self.cli.execute(Command::Start { 
+                    host: config_host, 
+                    port: config_port, 
+                    daemon: daemon_mode, 
+                    config_path 
+                })
             },
             other => self.cli.execute(other),
         }
