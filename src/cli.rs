@@ -43,26 +43,32 @@ impl Cli {
     pub fn execute(&self, command: Command) -> Result<String, CliError> {
         match command {
             Command::Start { host, port, daemon, config_path } => {
-                let (final_host, final_port, final_daemon) = if let Some(path) = config_path {
+                let config_path_ref = config_path.as_ref();
+                let (final_host, final_port, final_daemon, config_msg) = if let Some(path) = config_path_ref {
                     // Load config if path is provided
-                    if let Ok(config) = Config::load(&path) {
-                        (
+                    match Config::load(path) {
+                        Ok(config) => (
                             host.unwrap_or(config.server.host),
                             port.unwrap_or(config.server.port),
-                            daemon || config.server.daemon
-                        )
-                    } else {
-                        (
-                            host.unwrap_or_else(|| "127.0.0.1".to_string()),
-                            port.unwrap_or(8080),
-                            daemon
-                        )
+                            daemon || config.server.daemon,
+                            format!(" (using config from {})", path.display())
+                        ),
+                        Err(e) => {
+                            eprintln!("Warning: Failed to load config: {}", e);
+                            (
+                                host.unwrap_or_else(|| "127.0.0.1".to_string()),
+                                port.unwrap_or(8080),
+                                daemon,
+                                format!(" (failed to load config from {})", path.display())
+                            )
+                        }
                     }
                 } else {
                     (
                         host.unwrap_or_else(|| "127.0.0.1".to_string()),
                         port.unwrap_or(8080),
-                        daemon
+                        daemon,
+                        String::new()
                     )
                 };
                 
@@ -73,12 +79,6 @@ impl Cli {
                     " in daemon mode"
                 } else {
                     ""
-                };
-                
-                let config_msg = if let Some(path) = config_path {
-                    format!(" (using config from {})", path.display())
-                } else {
-                    "".to_string()
                 };
                 
                 // Simulate starting server
