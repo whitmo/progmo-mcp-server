@@ -42,30 +42,51 @@ impl Cli {
     pub fn execute(&self, command: Command) -> Result<String, CliError> {
         match command {
             Command::Start { host, port, daemon, config_path } => {
-                // In a real implementation, this would start the server
-                // For testing, we'll simulate it
+                let (final_host, final_port, final_daemon) = if let Some(path) = config_path {
+                    // Load config if path is provided
+                    if let Ok(config) = Config::load(&path) {
+                        (
+                            host.unwrap_or(config.server.host),
+                            port.unwrap_or(config.server.port),
+                            daemon || config.server.daemon
+                        )
+                    } else {
+                        (
+                            host.unwrap_or_else(|| "127.0.0.1".to_string()),
+                            port.unwrap_or(8080),
+                            daemon
+                        )
+                    }
+                } else {
+                    (
+                        host.unwrap_or_else(|| "127.0.0.1".to_string()),
+                        port.unwrap_or(8080),
+                        daemon
+                    )
+                };
                 
-                // Load configuration if specified
+                // Set server as running
+                self.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
+                
+                let daemon_msg = if final_daemon {
+                    " in daemon mode"
+                } else {
+                    ""
+                };
+                
                 let config_msg = if let Some(path) = config_path {
                     format!(" (using config from {})", path.display())
                 } else {
                     "".to_string()
                 };
                 
-                let host = host.unwrap_or_else(|| "127.0.0.1".to_string());
-                let port = port.unwrap_or(8080);
-                
-                // Set server as running
-                self.is_running.store(true, std::sync::atomic::Ordering::SeqCst);
-                
-                let daemon_msg = if daemon {
-                    " in daemon mode"
-                } else {
-                    ""
-                };
-                
                 // Simulate starting server
-                Ok(format!("Server started on {}:{}{}{}", host, port, daemon_msg, config_msg))
+                Ok(format!("Server started on {}:{}{}{}", 
+                    final_host, 
+                    final_port, 
+                    daemon_msg,
+                    config_msg
+                ))
             },
             Command::Stop => {
                 // Set server as stopped

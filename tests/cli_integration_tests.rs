@@ -1,5 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
 use tempfile::TempDir;
 use p_mo::cli::{Cli, Command};
 use p_mo::config::Config;

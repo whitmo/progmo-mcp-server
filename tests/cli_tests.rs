@@ -3,7 +3,6 @@ mod cli_tests {
     use p_mo::cli::{Cli, Command};
     use p_mo::config::Config;
     use std::time::Duration;
-    use std::fs;
     use tempfile::TempDir;
 
     #[tokio::test]
