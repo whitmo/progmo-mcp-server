@@ -14,7 +14,7 @@ async fn test_cli_with_config_file() {
     config.server.port = 9999;
     config.save(&config_path).expect("Failed to save config");
     
-    let cli = Cli::new();
+    let mut cli = Cli::new();
     
     // Test start with config
     let result = cli.execute(Command::Start {
@@ -44,7 +44,7 @@ async fn test_cli_config_initialization() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let config_path = temp_dir.path().join("init_config.toml");
     
-    let cli = Cli::new();
+    let mut cli = Cli::new();
     
     // Test config initialization
     let result = cli.execute(Command::InitConfig {
@@ -70,7 +70,7 @@ async fn test_cli_command_line_override() {
     let config = Config::default();
     config.save(&config_path).expect("Failed to save config");
     
-    let cli = Cli::new();
+    let mut cli = Cli::new();
     
     // Test that command line arguments override config
     let result = cli.execute(Command::Start {
