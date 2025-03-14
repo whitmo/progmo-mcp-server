@@ -15,8 +15,8 @@ impl App {
         }
     }
 
-    pub fn load_config(&mut self, config_path: Option<PathBuf>) -> Result<(), CliError> {
-        let config_path = config_path.unwrap_or_else(Config::default_path);
+    pub fn load_config(&mut self, config_path: &Option<PathBuf>) -> Result<(), CliError> {
+        let config_path = config_path.clone().unwrap_or_else(Config::default_path);
         self.config = Some(Config::load(&config_path).map_err(CliError::from)?);
         Ok(())
     }
@@ -24,7 +24,7 @@ impl App {
     pub fn execute(&mut self, command: Command) -> Result<String, CliError> {
         match command {
             Command::Start { host, port, daemon, config_path } => {
-                self.load_config(config_path)?;
+                self.load_config(&config_path)?;
                 self.cli.execute(Command::Start { host, port, daemon, config_path })
             },
             other => self.cli.execute(other),
