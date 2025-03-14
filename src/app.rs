@@ -61,4 +61,65 @@ port = 8080
         assert!(app.load_config(Some(config_path)).is_ok());
         assert!(app.config.is_some());
     }
+
+    #[test]
+    fn test_app_execute_stop_command() {
+        let mut app = App::new();
+        let result = app.execute(Command::Stop);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_app_execute_status_command() {
+        let mut app = App::new();
+        let result = app.execute(Command::Status);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_app_execute_init_config() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("new_config.toml");
+
+        let mut app = App::new();
+        let result = app.execute(Command::InitConfig { 
+            config_path: Some(config_path.clone()) 
+        });
+        
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_app_config_loading_with_nonexistent_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("nonexistent_config.toml");
+
+        let mut app = App::new();
+        let result = app.load_config(Some(config_path));
+        
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_app_execute_start_with_config() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("start_config.toml");
+        
+        let config_content = r#"
+[server]
+host = "127.0.0.1"
+port = 8080
+"#;
+        fs::write(&config_path, config_content).unwrap();
+
+        let mut app = App::new();
+        let result = app.execute(Command::Start {
+            host: None,
+            port: None,
+            daemon: false,
+            config_path: Some(config_path),
+        });
+        
+        assert!(result.is_ok());
+    }
 }
