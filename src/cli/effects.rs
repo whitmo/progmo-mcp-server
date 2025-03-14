@@ -6,8 +6,6 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum CliError {
-    #[error("Failed to parse arguments: {0}")]
-    ParseError(#[from] ParseError),
     
     #[error("Failed to execute command: {0}")]
     ExecutionError(String),
