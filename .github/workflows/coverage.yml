@@ -19,10 +19,12 @@ jobs:
 
       - name: Generate code coverage
         run: |
+          echo "Running tests..."
+          make test
           echo "Generating coverage report..."
-          cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml --out Html --fail-under 75
+          make coverage-html
           echo "Current coverage stats:"
-          cargo tarpaulin --verbose --workspace --no-fail-under
+          make coverage
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

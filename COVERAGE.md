@@ -2,7 +2,7 @@
 
 ## Current Status
 - Target: 75% minimum coverage (enforced in CI)
-- Current: Run `cargo tarpaulin --workspace` to check
+- Current: Run `make coverage` to check
 - Goal: 100% coverage
 
 ## Exemptions
