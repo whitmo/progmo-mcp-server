@@ -8,7 +8,7 @@ mod cli_tests {
     #[tokio::test]
     async fn test_cli_server_control() {
         // Create CLI instance
-        let cli = Cli::new();
+        let mut cli = Cli::new();
         
         // Start server
         let result = cli.execute(Command::Start {
@@ -45,7 +45,7 @@ mod cli_tests {
         let config = Config::default();
         config.save(&config_path).expect("Failed to save config");
         
-        let cli = Cli::new();
+        let mut cli = Cli::new();
         
         // Test that CLI arguments override config values
         let result = cli.execute(Command::Start {
