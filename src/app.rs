@@ -58,7 +58,7 @@ port = 8080
         fs::write(&config_path, config_content).unwrap();
 
         let mut app = App::new();
-        assert!(app.load_config(Some(config_path)).is_ok());
+        assert!(app.load_config(&Some(config_path)).is_ok());
         assert!(app.config.is_some());
     }
 
@@ -95,7 +95,7 @@ port = 8080
         let config_path = temp_dir.path().join("nonexistent_config.toml");
 
         let mut app = App::new();
-        let result = app.load_config(Some(config_path));
+        let result = app.load_config(&Some(config_path));
         
         assert!(result.is_err());
     }
