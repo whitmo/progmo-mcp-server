@@ -1,11 +1,13 @@
 # Coverage Goals
 
 ## Current Status
-- Target: 75% minimum coverage
+- Target: 75% minimum coverage (enforced in CI)
+- Current: Run `cargo tarpaulin --workspace` to check
 - Goal: 100% coverage
 
 ## Exemptions
 None currently - all code should be tested.
+Coverage must be maintained or improved with each PR.
 
 ## Strategy
 1. Pure Function Extraction
