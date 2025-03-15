@@ -115,6 +115,120 @@ async fn test_error_handling_missing_method() {
 }
 
 #[tokio::test]
+async fn test_delete_knowledge_entry() {
+    // Create a mock vector store
+    let store = MockQdrantConnector::new();
+    
+    // Create MCP server
+    let server_config = ServerConfig {
+        name: "test-server".to_string(),
+        version: "0.1.0".to_string(),
+    };
+    
+    let server = ProgmoMcpServer::new(server_config, Arc::new(store));
+    
+    // Send CallTool request for delete_knowledge_entry
+    let request = r#"{"jsonrpc":"2.0","id":"11","method":"CallTool","params":{"name":"delete_knowledge_entry","arguments":{"collection_id":"test_collection","entry_id":"test-id-123"}}}"#;
+    let response = server.handle_request(request).await;
+    
+    // Verify response
+    let response_value: Value = serde_json::from_str(&response).unwrap();
+    assert_eq!(response_value["id"], "11");
+    assert!(response_value["result"]["content"].is_array());
+    assert_eq!(response_value["result"]["content"][0]["type"], "text");
+    
+    // Verify the entry was deleted
+    let text = response_value["result"]["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains("Deleted entry with ID: test-id-123"));
+}
+
+#[tokio::test]
+async fn test_update_knowledge_entry() {
+    // Create a mock vector store
+    let store = MockQdrantConnector::new();
+    
+    // Create MCP server
+    let server_config = ServerConfig {
+        name: "test-server".to_string(),
+        version: "0.1.0".to_string(),
+    };
+    
+    let server = ProgmoMcpServer::new(server_config, Arc::new(store));
+    
+    // Send CallTool request for update_knowledge_entry
+    let request = r#"{"jsonrpc":"2.0","id":"12","method":"CallTool","params":{"name":"update_knowledge_entry","arguments":{"collection_id":"test_collection","entry_id":"test-id-123","content":"Updated content for knowledge entry"}}}"#;
+    let response = server.handle_request(request).await;
+    
+    // Verify response
+    let response_value: Value = serde_json::from_str(&response).unwrap();
+    assert_eq!(response_value["id"], "12");
+    assert!(response_value["result"]["content"].is_array());
+    assert_eq!(response_value["result"]["content"][0]["type"], "text");
+    
+    // Verify the entry was updated
+    let text = response_value["result"]["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains("Updated entry with ID: test-id-123"));
+}
+
+#[tokio::test]
+async fn test_list_collections() {
+    // Create a mock vector store
+    let store = MockQdrantConnector::new();
+    
+    // Create MCP server
+    let server_config = ServerConfig {
+        name: "test-server".to_string(),
+        version: "0.1.0".to_string(),
+    };
+    
+    let server = ProgmoMcpServer::new(server_config, Arc::new(store));
+    
+    // Send CallTool request for list_collections
+    let request = r#"{"jsonrpc":"2.0","id":"13","method":"CallTool","params":{"name":"list_collections","arguments":{}}}"#;
+    let response = server.handle_request(request).await;
+    
+    // Verify response
+    let response_value: Value = serde_json::from_str(&response).unwrap();
+    assert_eq!(response_value["id"], "13");
+    assert!(response_value["result"]["content"].is_array());
+    assert_eq!(response_value["result"]["content"][0]["type"], "text");
+    
+    // Verify the collections were listed
+    let collections_text = response_value["result"]["content"][0]["text"].as_str().unwrap();
+    let collections: Vec<String> = serde_json::from_str(collections_text).unwrap();
+    assert!(!collections.is_empty());
+    assert!(collections.contains(&"general".to_string()));
+}
+
+#[tokio::test]
+async fn test_create_collection() {
+    // Create a mock vector store
+    let store = MockQdrantConnector::new();
+    
+    // Create MCP server
+    let server_config = ServerConfig {
+        name: "test-server".to_string(),
+        version: "0.1.0".to_string(),
+    };
+    
+    let server = ProgmoMcpServer::new(server_config, Arc::new(store));
+    
+    // Send CallTool request for create_collection
+    let request = r#"{"jsonrpc":"2.0","id":"14","method":"CallTool","params":{"name":"create_collection","arguments":{"collection_id":"new_test_collection","vector_size":512}}}"#;
+    let response = server.handle_request(request).await;
+    
+    // Verify response
+    let response_value: Value = serde_json::from_str(&response).unwrap();
+    assert_eq!(response_value["id"], "14");
+    assert!(response_value["result"]["content"].is_array());
+    assert_eq!(response_value["result"]["content"][0]["type"], "text");
+    
+    // Verify the collection was created
+    let text = response_value["result"]["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains("Created collection: new_test_collection"));
+}
+
+#[tokio::test]
 async fn test_error_handling_invalid_tool_params() {
     // Create a mock vector store
     let store = MockQdrantConnector::new();

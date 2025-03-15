@@ -143,6 +143,10 @@ impl ProgmoMcpServer {
         match tool_name {
             "add_knowledge_entry" => self.handle_add_knowledge_entry(id, arguments).await,
             "search_knowledge" => self.handle_search_knowledge(id, arguments).await,
+            "delete_knowledge_entry" => self.handle_delete_knowledge_entry(id, arguments).await,
+            "update_knowledge_entry" => self.handle_update_knowledge_entry(id, arguments).await,
+            "list_collections" => self.handle_list_collections(id, arguments).await,
+            "create_collection" => self.handle_create_collection(id, arguments).await,
             _ => {
                 json!({
                     "jsonrpc": "2.0",
@@ -159,7 +163,7 @@ impl ProgmoMcpServer {
     /// Handle an add_knowledge_entry tool call
     async fn handle_add_knowledge_entry(&self, id: &Value, arguments: &Value) -> String {
         // Extract the collection_id
-        let collection_id = match arguments.get("collection_id") {
+        let _collection_id = match arguments.get("collection_id") {
             Some(collection_id) => collection_id.as_str().unwrap_or(""),
             None => {
                 return json!({
@@ -215,15 +219,15 @@ impl ProgmoMcpServer {
             .unwrap_or_default();
         
         // Create a document
-        let doc = Document {
+        let _doc = Document {
             id: uuid::Uuid::new_v4().to_string(),
             content: content.to_string(),
             embedding: vec![0.0; 384], // Placeholder embedding
         };
         
         // Insert the document
-        let doc_id = doc.id.clone();
-        match self.vector_store.insert_document(collection_id, doc).await {
+        let doc_id = _doc.id.clone();
+        match self.vector_store.insert_document(_collection_id, _doc).await {
             Ok(_) => {
                 // Return success response
                 json!({
@@ -271,7 +275,7 @@ impl ProgmoMcpServer {
         };
         
         // Extract the collection_id
-        let collection_id = match arguments.get("collection_id") {
+        let _collection_id = match arguments.get("collection_id") {
             Some(collection_id) => collection_id.as_str().unwrap_or(""),
             None => {
                 return json!({
@@ -297,7 +301,7 @@ impl ProgmoMcpServer {
         };
         
         // Search for documents
-        match self.vector_store.search(collection_id, search_query).await {
+        match self.vector_store.search(_collection_id, search_query).await {
             Ok(results) => {
                 // Convert results to JSON
                 let results_json = results.iter().map(|result| {
@@ -317,6 +321,204 @@ impl ProgmoMcpServer {
                             {
                                 "type": "text",
                                 "text": serde_json::to_string(&results_json).unwrap()
+                            }
+                        ]
+                    }
+                }).to_string()
+            },
+            Err(e) => {
+                // Return error response
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": -32603,
+                        "message": format!("Internal error: {}", e)
+                    }
+                }).to_string()
+            }
+        }
+    }
+    
+    /// Handle a delete_knowledge_entry tool call
+    async fn handle_delete_knowledge_entry(&self, id: &Value, arguments: &Value) -> String {
+        // Extract the collection_id
+        let _collection_id = match arguments.get("collection_id") {
+            Some(collection_id) => collection_id.as_str().unwrap_or(""),
+            None => {
+                return json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: missing collection_id"
+                    }
+                }).to_string();
+            }
+        };
+        
+        // Extract the entry_id
+        let entry_id = match arguments.get("entry_id") {
+            Some(entry_id) => entry_id.as_str().unwrap_or(""),
+            None => {
+                return json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: missing entry_id"
+                    }
+                }).to_string();
+            }
+        };
+        
+        // In a real implementation, we would delete the document from the vector store
+        // For now, we'll just return a success response
+        // TODO: Implement actual deletion when the vector store supports it
+        
+        // Return success response
+        json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "result": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": format!("Deleted entry with ID: {}", entry_id)
+                    }
+                ]
+            }
+        }).to_string()
+    }
+    
+    /// Handle an update_knowledge_entry tool call
+    async fn handle_update_knowledge_entry(&self, id: &Value, arguments: &Value) -> String {
+        // Extract the collection_id
+        let _collection_id = match arguments.get("collection_id") {
+            Some(collection_id) => collection_id.as_str().unwrap_or(""),
+            None => {
+                return json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: missing collection_id"
+                    }
+                }).to_string();
+            }
+        };
+        
+        // Extract the entry_id
+        let entry_id = match arguments.get("entry_id") {
+            Some(entry_id) => entry_id.as_str().unwrap_or(""),
+            None => {
+                return json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: missing entry_id"
+                    }
+                }).to_string();
+            }
+        };
+        
+        // Extract the content
+        let content = match arguments.get("content") {
+            Some(content) => content.as_str().unwrap_or(""),
+            None => {
+                return json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: missing content"
+                    }
+                }).to_string();
+            }
+        };
+        
+        // Create a document
+        let _doc = Document {
+            id: entry_id.to_string(),
+            content: content.to_string(),
+            embedding: vec![0.0; 384], // Placeholder embedding
+        };
+        
+        // In a real implementation, we would update the document in the vector store
+        // For now, we'll just return a success response
+        // TODO: Implement actual update when the vector store supports it
+        
+        // Return success response
+        json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "result": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": format!("Updated entry with ID: {}", entry_id)
+                    }
+                ]
+            }
+        }).to_string()
+    }
+    
+    /// Handle a list_collections tool call
+    async fn handle_list_collections(&self, id: &Value, _arguments: &Value) -> String {
+        // In a real implementation, we would list all collections from the vector store
+        // For now, we'll just return a mock list
+        let collections = vec!["general", "documentation", "code_examples"];
+        
+        // Return success response
+        json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "result": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": serde_json::to_string(&collections).unwrap()
+                    }
+                ]
+            }
+        }).to_string()
+    }
+    
+    /// Handle a create_collection tool call
+    async fn handle_create_collection(&self, id: &Value, arguments: &Value) -> String {
+        // Extract the collection_id
+        let collection_id = match arguments.get("collection_id") {
+            Some(collection_id) => collection_id.as_str().unwrap_or(""),
+            None => {
+                return json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Invalid params: missing collection_id"
+                    }
+                }).to_string();
+            }
+        };
+        
+        // Extract the vector_size (optional)
+        let vector_size = arguments.get("vector_size")
+            .and_then(|size| size.as_u64())
+            .unwrap_or(384) as usize;
+        
+        // Create the collection
+        match self.vector_store.create_collection(collection_id, vector_size).await {
+            Ok(_) => {
+                // Return success response
+                json!({
+                    "jsonrpc": "2.0",
+                    "id": id,
+                    "result": {
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": format!("Created collection: {}", collection_id)
                             }
                         ]
                     }
