@@ -4,7 +4,6 @@ pub mod api;
 pub mod vector_store;
 pub mod config;
 pub mod app;
-pub mod mcp;
 pub mod text_processing;
 
 pub use server::Server;
