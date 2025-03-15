@@ -14,9 +14,12 @@ The purpose of this project is to:
 ## Contents
 
 - [EXECUTIVE_SUMMARY.md](./EXECUTIVE_SUMMARY.md): High-level overview of project status and roadmap
+- [IMMEDIATE_FOCUS.md](./IMMEDIATE_FOCUS.md): Detailed breakdown of the highest priority components to implement first
 - [NEXT_STEPS.md](./NEXT_STEPS.md): Comprehensive checklist of prioritized tasks for the project
 - [TEST_PLAN.md](./TEST_PLAN.md): Detailed testing strategy for the next steps implementation
 - [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md): Specific implementation guidance with code examples and timeline
+- [MCP_INTEGRATION.md](./MCP_INTEGRATION.md): Guide for integrating with the Model Context Protocol using the rust-sdk
+- [VECTOR_STORE_DESIGN.md](./VECTOR_STORE_DESIGN.md): Design document for vector store integration with embedded Qdrant
 
 ## How to Use This Document
 

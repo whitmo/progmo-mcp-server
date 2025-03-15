@@ -4,6 +4,7 @@ pub mod api;
 pub mod vector_store;
 pub mod config;
 pub mod app;
+pub mod mcp;
 
 pub use server::Server;
 pub use cli::{Cli, Args};
