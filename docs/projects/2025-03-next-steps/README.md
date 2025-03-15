@@ -17,6 +17,7 @@ The purpose of this project is to:
 - [NEXT_STEPS.md](./NEXT_STEPS.md): Comprehensive checklist of prioritized tasks for the project
 - [TEST_PLAN.md](./TEST_PLAN.md): Detailed testing strategy for the next steps implementation
 - [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md): Specific implementation guidance with code examples and timeline
+- [PERSONAL_PREFERENCE_TOOL.md](./PERSONAL_PREFERENCE_TOOL.md): Specification for the personal preference tool
 
 ## How to Use This Document
 

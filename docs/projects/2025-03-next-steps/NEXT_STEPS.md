@@ -2,6 +2,17 @@
 
 This document outlines the prioritized next steps for the progmo-mcp-server project based on the current state of implementation.
 
+## Immediate Tasks
+
+- [ ] **Merge Pending PRs**
+  - [ ] Resolve conflicts in PR #1 and merge
+  - [ ] Resolve conflicts in PR #2 and merge
+
+- [ ] **Documentation Cleanup**
+  - [ ] Update documentation to reflect current state
+  - [ ] Remove outdated information
+  - [ ] Ensure all completed tasks are checked off
+
 ## 1. Complete Vector Store Integration
 
 - [ ] **Implement Full Qdrant Connector**
@@ -19,9 +30,9 @@ This document outlines the prioritized next steps for the progmo-mcp-server proj
 - [ ] **Vector Store Operations**
   - [ ] Implement document insertion with embeddings
   - [ ] Add batch operations support
-  - [ ] Implement update operations
-  - [ ] Create delete operations with cascading cleanup
-  - [ ] Add collection management utilities
+  - [x] Implement update operations
+  - [x] Create delete operations with cascading cleanup
+  - [x] Add collection management utilities
 
 - [ ] **Query Capabilities**
   - [ ] Implement semantic search with similarity scoring
@@ -77,10 +88,11 @@ This document outlines the prioritized next steps for the progmo-mcp-server proj
   - [ ] Add relationship mapping between entries
 
 - [ ] **Integration with MCP**
-  - [ ] Implement MCP-compatible response formatting
-  - [ ] Create context retrieval for Cline
+  - [x] Implement MCP-compatible response formatting
+  - [x] Create context retrieval for Cline
   - [ ] Add streaming response capabilities
   - [ ] Implement context window management
+  - [ ] Implement personal preference tool for storing developer preferences
 
 ## 4. Documentation-Driven Development Features
 
@@ -176,3 +188,29 @@ This document outlines the prioritized next steps for the progmo-mcp-server proj
 3. Maintain high test coverage throughout development
 4. Regularly refactor to maintain code quality
 5. Document all new features as they are implemented
+
+## Prioritized Next Steps
+
+Based on the current state of the project and recent progress, the following areas should be prioritized:
+
+1. **Complete Vector Store Integration**
+   - Implement embedding generation to replace placeholder embeddings
+   - Add batch operations support for efficiency
+   - Enhance text processing with improved chunking strategies
+
+2. **Expand API Implementation**
+   - Create knowledge management endpoints for CRUD operations
+   - Implement search endpoints with filtering options
+   - Add collection management endpoints
+
+3. **Improve Test Coverage**
+   - Create integration tests for MCP tools
+   - Implement a more comprehensive mock vector store
+   - Add performance benchmarks for vector operations
+
+4. **Implement Personal Preference Tool**
+   - Design and implement preference storage system
+   - Create MCP tools for preference management
+   - Add preference inference from code and feedback
+
+These priorities build on the foundation established with the MCP tools and move us closer to a fully functional knowledge management system.
