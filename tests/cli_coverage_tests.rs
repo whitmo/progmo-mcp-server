@@ -1,197 +1,169 @@
-use p_mo::cli::{Command, CommandArgs, CommandResult};
-use p_mo::config::{Config, ConfigBuilder};
+use p_mo::cli::{Cli, Command};
+use p_mo::config::Config;
 use std::path::PathBuf;
 use tempfile::tempdir;
 
 #[test]
-fn test_command_args_new() {
-    let args = CommandArgs::new(
-        Some("start".to_string()),
-        Some("127.0.0.1".to_string()),
-        Some(8080),
-        Some("debug".to_string()),
-        Some("/tmp/data".to_string()),
-        Some("/tmp/app.pid".to_string()),
-        Some("/tmp/config.toml".to_string()),
-    );
-    
-    assert_eq!(args.command, Some("start".to_string()));
-    assert_eq!(args.host, Some("127.0.0.1".to_string()));
-    assert_eq!(args.port, Some(8080));
-    assert_eq!(args.log_level, Some("debug".to_string()));
-    assert_eq!(args.data_dir, Some("/tmp/data".to_string()));
-    assert_eq!(args.pid_file, Some("/tmp/app.pid".to_string()));
-    assert_eq!(args.config_file, Some("/tmp/config.toml".to_string()));
+fn test_cli_new() {
+    let cli = Cli::new();
+    // Just verify we can create a new CLI instance
+    assert!(true);
 }
 
 #[test]
-fn test_command_args_to_config() {
-    let args = CommandArgs::new(
-        None,
-        Some("127.0.0.1".to_string()),
-        Some(8080),
-        Some("debug".to_string()),
-        Some("/tmp/data".to_string()),
-        Some("/tmp/app.pid".to_string()),
-        None,
-    );
+fn test_cli_execute_start() {
+    let mut cli = Cli::new();
     
-    let config = args.to_config();
+    let command = Command::Start {
+        host: Some("127.0.0.1".to_string()),
+        port: Some(8080),
+        daemon: false,
+        config_path: None,
+    };
     
-    assert_eq!(config.host, "127.0.0.1");
-    assert_eq!(config.port, 8080);
-    assert_eq!(config.log_level, "debug");
-    assert_eq!(config.data_dir, "/tmp/data");
-    assert_eq!(config.pid_file, "/tmp/app.pid");
+    let result = cli.execute(command);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "127.0.0.1:8080");
 }
 
 #[test]
-fn test_command_args_empty() {
-    let args = CommandArgs::new(
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    );
+fn test_cli_execute_start_with_daemon() {
+    let mut cli = Cli::new();
     
-    let config = args.to_config();
+    let command = Command::Start {
+        host: Some("127.0.0.1".to_string()),
+        port: Some(8080),
+        daemon: true,
+        config_path: None,
+    };
     
-    // Should use default values
-    assert_eq!(config.host, "localhost");
-    assert_eq!(config.port, 3000);
-    assert_eq!(config.log_level, "info");
-    assert!(config.data_dir.contains("data"));
-    assert!(config.pid_file.contains("app.pid"));
+    let result = cli.execute(command);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "127.0.0.1:8080 in daemon mode");
 }
 
 #[test]
-fn test_command_parse_start() {
-    let args = CommandArgs::new(
-        Some("start".to_string()),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    );
+fn test_cli_execute_start_with_config() {
+    // Create a temporary directory and config file
+    let temp_dir = tempdir().unwrap();
+    let config_path = temp_dir.path().join("test_config.toml");
     
-    let command = Command::parse(&args);
+    // Create a config
+    let mut config = Config::default();
+    config.server.host = "192.168.1.1".to_string();
+    config.server.port = 9090;
     
-    match command {
-        Command::Start => {}
-        _ => panic!("Expected Start command"),
-    }
+    // Save the config
+    config.save(&config_path).unwrap();
+    
+    let mut cli = Cli::new();
+    
+    let command = Command::Start {
+        host: None,
+        port: None,
+        daemon: false,
+        config_path: Some(config_path),
+    };
+    
+    let result = cli.execute(command);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "192.168.1.1:9090");
 }
 
 #[test]
-fn test_command_parse_stop() {
-    let args = CommandArgs::new(
-        Some("stop".to_string()),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    );
+fn test_cli_execute_stop() {
+    let mut cli = Cli::new();
     
-    let command = Command::parse(&args);
+    // First start the server
+    let start_command = Command::Start {
+        host: Some("127.0.0.1".to_string()),
+        port: Some(8080),
+        daemon: false,
+        config_path: None,
+    };
     
-    match command {
-        Command::Stop => {}
-        _ => panic!("Expected Stop command"),
-    }
+    let _ = cli.execute(start_command);
+    
+    // Then stop it
+    let stop_command = Command::Stop;
+    let result = cli.execute(stop_command);
+    
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "Server stopped");
 }
 
 #[test]
-fn test_command_parse_status() {
-    let args = CommandArgs::new(
-        Some("status".to_string()),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    );
+fn test_cli_execute_status_running() {
+    let mut cli = Cli::new();
     
-    let command = Command::parse(&args);
+    // First start the server
+    let start_command = Command::Start {
+        host: Some("127.0.0.1".to_string()),
+        port: Some(8080),
+        daemon: false,
+        config_path: None,
+    };
     
-    match command {
-        Command::Status => {}
-        _ => panic!("Expected Status command"),
-    }
+    let _ = cli.execute(start_command);
+    
+    // Then check status
+    let status_command = Command::Status;
+    let result = cli.execute(status_command);
+    
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "Server status: running");
 }
 
 #[test]
-fn test_command_parse_init_config() {
-    let args = CommandArgs::new(
-        Some("init-config".to_string()),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    );
+fn test_cli_execute_status_stopped() {
+    let mut cli = Cli::new();
     
-    let command = Command::parse(&args);
+    // Check status without starting
+    let status_command = Command::Status;
+    let result = cli.execute(status_command);
     
-    match command {
-        Command::InitConfig => {}
-        _ => panic!("Expected InitConfig command"),
-    }
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "Server status: stopped");
 }
 
 #[test]
-fn test_command_parse_unknown() {
-    let args = CommandArgs::new(
-        Some("unknown".to_string()),
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    );
+fn test_cli_execute_init_config() {
+    let mut cli = Cli::new();
     
-    let command = Command::parse(&args);
+    // Create a temporary directory for the config
+    let temp_dir = tempdir().unwrap();
+    let config_path = temp_dir.path().join("init_config.toml");
     
-    match command {
-        Command::Unknown => {}
-        _ => panic!("Expected Unknown command"),
-    }
+    let command = Command::InitConfig {
+        config_path: Some(config_path.clone()),
+    };
+    
+    let result = cli.execute(command);
+    
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "Created default configuration");
+    assert!(config_path.exists());
 }
 
 #[test]
-fn test_command_parse_none() {
-    let args = CommandArgs::new(
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    );
+fn test_command_variants() {
+    // Test that we can create all command variants
+    let start_cmd = Command::Start {
+        host: Some("localhost".to_string()),
+        port: Some(8080),
+        daemon: true,
+        config_path: None,
+    };
     
-    let command = Command::parse(&args);
+    let stop_cmd = Command::Stop;
+    let status_cmd = Command::Status;
     
-    match command {
-        Command::Unknown => {}
-        _ => panic!("Expected Unknown command"),
-    }
-}
-
-#[test]
-fn test_command_result_display() {
-    let success_result = CommandResult::Success("Command executed successfully".to_string());
-    let error_result = CommandResult::Error("Command failed".to_string());
+    let init_cmd = Command::InitConfig {
+        config_path: Some(PathBuf::from("/tmp/config.toml")),
+    };
     
-    assert_eq!(format!("{}", success_result), "Command executed successfully");
-    assert_eq!(format!("{}", error_result), "Error: Command failed");
+    assert!(matches!(start_cmd, Command::Start { .. }));
+    assert!(matches!(stop_cmd, Command::Stop));
+    assert!(matches!(status_cmd, Command::Status));
+    assert!(matches!(init_cmd, Command::InitConfig { .. }));
 }

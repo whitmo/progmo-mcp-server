@@ -1,35 +1,18 @@
-use p_mo::config::{Config, ConfigBuilder};
+use p_mo::config::Config;
 use std::fs;
 use std::path::Path;
 use tempfile::tempdir;
 
 #[test]
-fn test_config_builder_with_all_options() {
-    let config = ConfigBuilder::new()
-        .with_host("127.0.0.1".to_string())
-        .with_port(8080)
-        .with_log_level("debug".to_string())
-        .with_data_dir("/tmp/data".to_string())
-        .with_pid_file("/tmp/app.pid".to_string())
-        .build();
+fn test_config_default() {
+    let config = Config::default();
     
-    assert_eq!(config.host, "127.0.0.1");
-    assert_eq!(config.port, 8080);
-    assert_eq!(config.log_level, "debug");
-    assert_eq!(config.data_dir, "/tmp/data");
-    assert_eq!(config.pid_file, "/tmp/app.pid");
-}
-
-#[test]
-fn test_config_to_string() {
-    let config = ConfigBuilder::new()
-        .with_host("127.0.0.1".to_string())
-        .with_port(8080)
-        .build();
-    
-    let config_str = config.to_string();
-    assert!(config_str.contains("host: 127.0.0.1"));
-    assert!(config_str.contains("port: 8080"));
+    assert_eq!(config.server.host, "127.0.0.1");
+    assert_eq!(config.server.port, 8080);
+    assert_eq!(config.server.timeout_secs, 30);
+    assert_eq!(config.server.daemon, false);
+    assert_eq!(config.server.pid_file, Some(std::path::PathBuf::from("/tmp/p-mo.pid")));
+    assert_eq!(config.server.log_file, Some(std::path::PathBuf::from("/tmp/p-mo.log")));
 }
 
 #[test]
@@ -39,10 +22,9 @@ fn test_config_save_and_load() {
     let config_path = temp_dir.path().join("test_config.toml");
     
     // Create a config
-    let config = ConfigBuilder::new()
-        .with_host("127.0.0.1".to_string())
-        .with_port(8080)
-        .build();
+    let mut config = Config::default();
+    config.server.host = "192.168.1.1".to_string();
+    config.server.port = 9090;
     
     // Save the config
     config.save(&config_path).unwrap();
@@ -51,53 +33,34 @@ fn test_config_save_and_load() {
     let loaded_config = Config::load(&config_path).unwrap();
     
     // Verify the loaded config matches the original
-    assert_eq!(loaded_config.host, config.host);
-    assert_eq!(loaded_config.port, config.port);
-    assert_eq!(loaded_config.log_level, config.log_level);
-    assert_eq!(loaded_config.data_dir, config.data_dir);
-    assert_eq!(loaded_config.pid_file, config.pid_file);
+    assert_eq!(loaded_config.server.host, config.server.host);
+    assert_eq!(loaded_config.server.port, config.server.port);
+    assert_eq!(loaded_config.server.timeout_secs, config.server.timeout_secs);
+    assert_eq!(loaded_config.server.daemon, config.server.daemon);
+    assert_eq!(loaded_config.server.pid_file, config.server.pid_file);
+    assert_eq!(loaded_config.server.log_file, config.server.log_file);
 }
 
 #[test]
-fn test_config_merge() {
-    // Create base config
-    let base_config = ConfigBuilder::new()
-        .with_host("127.0.0.1".to_string())
-        .with_port(8080)
-        .with_log_level("info".to_string())
-        .build();
-    
-    // Create override config with some different values
-    let override_config = ConfigBuilder::new()
-        .with_port(9090)
-        .with_log_level("debug".to_string())
-        .build();
-    
-    // Merge the configs
-    let merged_config = base_config.merge(&override_config);
-    
-    // Verify the merged config has the expected values
-    assert_eq!(merged_config.host, "127.0.0.1"); // From base
-    assert_eq!(merged_config.port, 9090); // From override
-    assert_eq!(merged_config.log_level, "debug"); // From override
+fn test_config_default_path() {
+    let path = Config::default_path();
+    assert!(path.to_string_lossy().contains("config.toml"));
 }
 
 #[test]
-fn test_config_from_env() {
-    // Set environment variables
-    std::env::set_var("P_MO_HOST", "192.168.1.1");
-    std::env::set_var("P_MO_PORT", "9000");
-    
-    // Create config from environment
-    let config = Config::from_env();
-    
-    // Verify the config has values from environment
-    assert_eq!(config.host, "192.168.1.1");
-    assert_eq!(config.port, 9000);
-    
-    // Clean up
-    std::env::remove_var("P_MO_HOST");
-    std::env::remove_var("P_MO_PORT");
+fn test_config_ensure_config_dir() {
+    let result = Config::ensure_config_dir();
+    assert!(result.is_ok());
+    let dir = result.unwrap();
+    assert!(dir.exists());
+}
+
+#[test]
+fn test_config_create_default_config() {
+    let result = Config::create_default_config();
+    assert!(result.is_ok());
+    let path = result.unwrap();
+    assert!(path.exists());
 }
 
 #[test]
@@ -107,7 +70,7 @@ fn test_config_invalid_toml() {
     let config_path = temp_dir.path().join("invalid_config.toml");
     
     // Write invalid TOML to the file
-    fs::write(&config_path, "host = 'localhost' port = 8080").unwrap();
+    fs::write(&config_path, "server = { host = 'localhost' port = 8080 }").unwrap();
     
     // Try to load the config
     let result = Config::load(&config_path);
