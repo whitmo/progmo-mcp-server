@@ -2,7 +2,17 @@ use std::path::PathBuf;
 use thiserror::Error;
 use tracing::{info, error};
 
-use crate::text_processing::EmbeddingProvider;
+/// A trait for embedding providers
+pub trait EmbeddingProvider {
+    /// Generate an embedding for a single text
+    fn generate_embedding(&self, text: &str) -> Result<Vec<f32>, EmbeddingError>;
+    
+    /// Generate embeddings for multiple texts
+    fn generate_embeddings(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, EmbeddingError>;
+    
+    /// Get the dimensionality of the embeddings
+    fn embedding_dim(&self) -> usize;
+}
 
 #[cfg(feature = "embedding-generation")]
 use rust_bert::bert::{BertConfig, BertModel};

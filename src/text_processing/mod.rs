@@ -1,5 +1,7 @@
 mod pure;
+pub mod embedding;
 pub use pure::*;
+pub use embedding::{EmbeddingProvider, EmbeddingError, EmbeddingGenerator, EmbeddingConfig, EmbeddingModelType};
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
