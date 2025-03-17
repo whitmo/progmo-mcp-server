@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+use crate::text_processing::EmbeddingProvider;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
@@ -7,10 +9,58 @@ pub struct Document {
     pub embedding: Vec<f32>,
 }
 
+impl Document {
+    pub fn new(content: String, embedding_provider: &impl EmbeddingProvider) -> Result<Self, crate::text_processing::EmbeddingError> {
+        let embedding = embedding_provider.generate_embedding(&content)?;
+        
+        Ok(Self {
+            id: Uuid::new_v4().to_string(),
+            content,
+            embedding,
+        })
+    }
+    
+    pub fn with_id(id: String, content: String, embedding_provider: &impl EmbeddingProvider) -> Result<Self, crate::text_processing::EmbeddingError> {
+        let embedding = embedding_provider.generate_embedding(&content)?;
+        
+        Ok(Self {
+            id,
+            content,
+            embedding,
+        })
+    }
+    
+    pub fn with_placeholder_embedding(content: String, embedding_dim: usize) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            content,
+            embedding: vec![0.0; embedding_dim],
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SearchQuery {
     pub embedding: Vec<f32>,
     pub limit: usize,
+}
+
+impl SearchQuery {
+    pub fn from_text(text: &str, limit: usize, embedding_provider: &impl EmbeddingProvider) -> Result<Self, crate::text_processing::EmbeddingError> {
+        let embedding = embedding_provider.generate_embedding(text)?;
+        
+        Ok(Self {
+            embedding,
+            limit,
+        })
+    }
+    
+    pub fn with_placeholder_embedding(embedding_dim: usize, limit: usize) -> Self {
+        Self {
+            embedding: vec![0.0; embedding_dim],
+            limit,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
