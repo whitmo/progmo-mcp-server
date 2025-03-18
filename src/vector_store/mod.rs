@@ -2,14 +2,17 @@ mod pure;
 pub use pure::*;
 
 use std::time::Duration;
+use std::sync::Arc;
 use thiserror::Error;
 use async_trait::async_trait;
 use deadpool::managed::{Manager, Pool, PoolError, RecycleError};
 use backoff::{ExponentialBackoff, ExponentialBackoffBuilder};
-use qdrant_client::qdrant::{VectorParams, Distance};
+use qdrant_client::qdrant::{VectorParams, Distance, PointsIdsList};
+use qdrant_client::qdrant::points_selector::PointsSelectorOneOf;
 use qdrant_client::{Qdrant, QdrantError};
 use qdrant_client::config::QdrantConfig as QdrantClientConfig;
 use tracing::error;
+use serde_json;
 
 #[derive(Debug, Error)]
 pub enum VectorStoreError {
@@ -27,6 +30,15 @@ pub enum VectorStoreError {
     
     #[error("Timeout error: {0}")]
     TimeoutError(String),
+    
+    #[error("Collection not found: {0}")]
+    CollectionNotFound(String),
+    
+    #[error("Document not found: {0}")]
+    DocumentNotFound(String),
+    
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
 }
 
 impl From<PoolError<QdrantError>> for VectorStoreError {
@@ -44,6 +56,38 @@ pub trait VectorStore: Send + Sync {
     async fn delete_collection(&self, name: &str) -> Result<(), VectorStoreError>;
     async fn insert_document(&self, collection: &str, document: Document) -> Result<(), VectorStoreError>;
     async fn search(&self, collection: &str, query: SearchQuery) -> Result<Vec<SearchResult>, VectorStoreError>;
+    
+    // Additional methods used in tests
+    async fn batch_insert(&self, collection: &str, documents: Vec<Document>) -> Result<Vec<String>, VectorStoreError> {
+        let mut ids = Vec::with_capacity(documents.len());
+        for document in documents {
+            let id = document.id.clone().unwrap_or_else(|| "unknown".to_string());
+            self.insert_document(collection, document).await?;
+            ids.push(id);
+        }
+        Ok(ids)
+    }
+    
+    async fn get_document(&self, collection: &str, id: &str) -> Result<Document, VectorStoreError> {
+        Err(VectorStoreError::OperationFailed("get_document not implemented".to_string()))
+    }
+    
+    async fn delete_document(&self, collection: &str, id: &str) -> Result<(), VectorStoreError> {
+        Err(VectorStoreError::OperationFailed("delete_document not implemented".to_string()))
+    }
+    
+    async fn filtered_search(&self, collection: &str, query: SearchQuery, filter: Filter) -> Result<Vec<SearchResult>, VectorStoreError> {
+        // Default implementation: perform regular search and filter results in memory
+        let results = self.search(collection, query).await?;
+        
+        // Apply filter
+        let filtered_results = results
+            .into_iter()
+            .filter(|result| matches_filter(&result.document, &filter))
+            .collect();
+        
+        Ok(filtered_results)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -174,6 +218,127 @@ impl QdrantConnector {
 
 #[async_trait]
 impl VectorStore for QdrantConnector {
+    async fn get_document(&self, collection: &str, id: &str) -> Result<Document, VectorStoreError> {
+        self.with_retry(|| async {
+            let client = self.client_pool.get().await?;
+            
+            use qdrant_client::qdrant::{PointId, WithPayloadSelector, WithVectorsSelector, GetPoints};
+            
+            // Create point ID
+            let point_id = PointId {
+                point_id_options: Some(qdrant_client::qdrant::point_id::PointIdOptions::Uuid(id.to_string())),
+            };
+            
+            // Create get points request
+            let get_points = GetPoints {
+                collection_name: collection.to_string(),
+                ids: vec![point_id],
+                with_payload: Some(WithPayloadSelector::from(true)),
+                with_vectors: Some(WithVectorsSelector::from(true)),
+                read_consistency: None,
+                shard_key_selector: None,
+                timeout: None,
+            };
+            
+            // Get point
+            let get_result = client.get_points(get_points).await
+                .map_err(|e| {
+                    if e.to_string().contains("not found") {
+                        VectorStoreError::CollectionNotFound(collection.to_string())
+                    } else {
+                        VectorStoreError::OperationFailed(format!("Failed to get document: {}", e))
+                    }
+                })?;
+            
+            // Check if point exists
+            if get_result.result.is_empty() {
+                return Err(VectorStoreError::DocumentNotFound(id.to_string()));
+            }
+            
+            // Get the first point
+            let point = &get_result.result[0];
+            
+            // Extract content
+            let content = point.payload.get("content").and_then(|value| {
+                if let Some(qdrant_client::qdrant::value::Kind::StringValue(content)) = &value.kind {
+                    Some(content.clone())
+                } else {
+                    None
+                }
+            }).unwrap_or_default();
+            
+            // Extract embedding
+            let embedding = point.vectors.as_ref().and_then(|v| {
+                if let Some(qdrant_client::qdrant::vectors_output::VectorsOptions::Vector(vector)) = &v.vectors_options {
+                    Some(vector.data.clone())
+                } else {
+                    None
+                }
+            }).unwrap_or_default();
+            
+            // Create document
+            let document = Document {
+                id: Some(id.to_string()),
+                content,
+                embedding,
+                metadata: serde_json::Value::Null,
+            };
+            
+            Ok(document)
+        }).await
+    }
+    
+    async fn delete_document(&self, collection: &str, id: &str) -> Result<(), VectorStoreError> {
+        self.with_retry(|| async {
+            let client = self.client_pool.get().await?;
+            
+            use qdrant_client::qdrant::{PointId, DeletePoints};
+            
+            // Create point ID
+            let point_id = PointId {
+                point_id_options: Some(qdrant_client::qdrant::point_id::PointIdOptions::Uuid(id.to_string())),
+            };
+            
+            // Create delete points request
+            let delete_points = DeletePoints {
+                collection_name: collection.to_string(),
+                points: Some(qdrant_client::qdrant::PointsSelector {
+                    points_selector_one_of: Some(PointsSelectorOneOf::Points(
+                        PointsIdsList {
+                            ids: vec![point_id],
+                        }
+                    )),
+                }),
+                wait: Some(true),
+                ordering: None,
+                shard_key_selector: None,
+            };
+            
+            // Delete point
+            let delete_result = client.delete_points(delete_points).await
+                .map_err(|e| {
+                    if e.to_string().contains("not found") {
+                        if e.to_string().contains("collection") {
+                            VectorStoreError::CollectionNotFound(collection.to_string())
+                        } else {
+                            VectorStoreError::DocumentNotFound(id.to_string())
+                        }
+                    } else {
+                        VectorStoreError::OperationFailed(format!("Failed to delete document: {}", e))
+                    }
+                })?;
+            
+            // Check if any points were deleted
+            if let Some(update_result) = delete_result.result {
+                if update_result.status == 0 {
+                    return Err(VectorStoreError::DocumentNotFound(id.to_string()));
+                }
+            }
+            
+            Ok(())
+        }).await
+    }
+    
     async fn test_connection(&self) -> Result<(), VectorStoreError> {
         self.with_retry(|| async {
             let client = self.client_pool.get().await?;
@@ -232,7 +397,7 @@ impl VectorStore for QdrantConnector {
             // Create point ID
             let point_id = PointId {
                 point_id_options: Some(qdrant_client::qdrant::point_id::PointIdOptions::Uuid(
-                    document.id.clone(),
+                    document.id.clone().unwrap_or_else(|| "unknown".to_string()),
                 )),
             };
             
@@ -280,6 +445,13 @@ impl VectorStore for QdrantConnector {
                 .map(|_| ())
                 .map_err(|e| VectorStoreError::OperationFailed(format!("Failed to insert document: {}", e)))
         }).await
+    }
+    
+    async fn filtered_search(&self, collection: &str, query: SearchQuery, filter: Filter) -> Result<Vec<SearchResult>, VectorStoreError> {
+        // For now, we'll use the default implementation that filters results in memory
+        // In a real implementation, we would convert the filter to Qdrant's filter format
+        // and apply it directly in the search query
+        <Self as VectorStore>::filtered_search(self, collection, query, filter).await
     }
     
     async fn search(&self, collection: &str, query: SearchQuery) -> Result<Vec<SearchResult>, VectorStoreError> {
@@ -334,9 +506,10 @@ impl VectorStore for QdrantConnector {
                     
                     Some(SearchResult {
                         document: Document {
-                            id,
+                            id: Some(id),
                             content,
                             embedding,
+                            metadata: serde_json::Value::Null,
                         },
                         score: point.score,
                     })
@@ -350,3 +523,33 @@ impl VectorStore for QdrantConnector {
 
 // Re-export the QdrantConnector for backward compatibility
 pub use self::QdrantConnector as EmbeddedQdrantConnector;
+
+/// Enum representing different modes for connecting to Qdrant
+#[derive(Debug, Clone)]
+pub enum QdrantMode {
+    /// Use an embedded Qdrant instance
+    Embedded,
+    
+    /// Connect to an external Qdrant instance
+    External(QdrantConfig),
+}
+
+/// Factory for creating Qdrant connectors
+pub struct QdrantFactory;
+
+impl QdrantFactory {
+    /// Create a new Qdrant connector based on the specified mode
+    pub async fn create(mode: QdrantMode) -> Result<EmbeddedQdrantConnector, VectorStoreError> {
+        match mode {
+            QdrantMode::Embedded => {
+                // Use default configuration for embedded mode
+                let config = QdrantConfig::default();
+                EmbeddedQdrantConnector::new(config).await
+            },
+            QdrantMode::External(config) => {
+                // Use provided configuration for external mode
+                EmbeddedQdrantConnector::new(config).await
+            }
+        }
+    }
+}
