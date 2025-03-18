@@ -1,118 +1,124 @@
-use p_mo::text_processing::{
-    tokenize, normalize_text, remove_stopwords, stem_words, extract_keywords
-};
+#[cfg(test)]
+mod text_processing_tests {
+    use p_mo::text_processing::{TextProcessor, ChunkingStrategy, TokenizerConfig};
 
-#[test]
-fn test_tokenize() {
-    let text = "Hello, world! This is a test.";
-    let tokens = tokenize(text);
-    assert_eq!(tokens, vec!["Hello", "world", "This", "is", "a", "test"]);
-}
-
-#[test]
-fn test_normalize_text() {
-    let text = "Hello, WORLD! This is a TEST.";
-    let normalized = normalize_text(text);
-    assert_eq!(normalized, "hello, world! this is a test.");
-}
-
-#[test]
-fn test_remove_stopwords() {
-    let tokens = vec!["this", "is", "a", "test", "of", "stopword", "removal"];
-    let filtered = remove_stopwords(&tokens);
-    assert_eq!(filtered, vec!["test", "stopword", "removal"]);
-}
-
-#[test]
-fn test_stem_words() {
-    let tokens = vec!["running", "jumps", "easily", "programming"];
-    let stemmed = stem_words(&tokens);
-    assert_eq!(stemmed, vec!["run".to_string(), "jump".to_string(), "easili".to_string(), "program".to_string()]);
-}
-
-#[test]
-fn test_extract_keywords() {
-    let text = "Natural language processing is a subfield of linguistics, computer science, and artificial intelligence concerned with the interactions between computers and human language.";
-    let keywords = extract_keywords(text, 5);
+    #[test]
+    fn test_tokenization() {
+        let config = TokenizerConfig::default();
+        let processor = TextProcessor::new(config, ChunkingStrategy::FixedSize(100));
+        
+        let text = "This is a test sentence. This is another test sentence.";
+        let tokens = processor.tokenize(text);
+        
+        assert!(tokens.len() > 0);
+        assert!(tokens.contains(&"test".to_string()));
+        assert!(tokens.contains(&"sentence".to_string()));
+    }
     
-    // The exact keywords might vary depending on the implementation,
-    // but we can check that we get the expected number of keywords
-    assert_eq!(keywords.len(), 5);
+    #[test]
+    fn test_fixed_size_chunking() {
+        let config = TokenizerConfig::default();
+        let processor = TextProcessor::new(config, ChunkingStrategy::FixedSize(10));
+        
+        let text = "This is a test sentence. This is another test sentence.";
+        let chunks = processor.chunk(text);
+        
+        // With a token limit of 10, we should have at least 2 chunks
+        assert!(chunks.len() >= 2);
+        
+        // Each chunk should have no more than 10 tokens
+        for chunk in &chunks {
+            let tokens = processor.tokenize(&chunk.content);
+            assert!(tokens.len() <= 10);
+        }
+        
+        // The combined content of all chunks should equal the original text
+        let combined = chunks.iter()
+            .map(|c| c.content.clone())
+            .collect::<Vec<String>>()
+            .join("");
+        assert_eq!(combined, text);
+    }
     
-    // Check that common stopwords are not included
-    assert!(!keywords.contains(&"is".to_string()));
-    assert!(!keywords.contains(&"a".to_string()));
-    assert!(!keywords.contains(&"the".to_string()));
-    assert!(!keywords.contains(&"and".to_string()));
-    assert!(!keywords.contains(&"between".to_string()));
-}
-
-#[test]
-fn test_tokenize_empty_string() {
-    let text = "";
-    let tokens = tokenize(text);
-    assert_eq!(tokens, Vec::<&str>::new());
-}
-
-#[test]
-fn test_normalize_text_empty_string() {
-    let text = "";
-    let normalized = normalize_text(text);
-    assert_eq!(normalized, "");
-}
-
-#[test]
-fn test_remove_stopwords_empty_list() {
-    let tokens = Vec::<&str>::new();
-    let filtered = remove_stopwords(&tokens);
-    assert_eq!(filtered, Vec::<&str>::new());
-}
-
-#[test]
-fn test_stem_words_empty_list() {
-    let tokens = Vec::<&str>::new();
-    let stemmed = stem_words(&tokens);
-    assert_eq!(stemmed, Vec::<&str>::new());
-}
-
-#[test]
-fn test_extract_keywords_empty_string() {
-    let text = "";
-    let keywords = extract_keywords(text, 5);
-    assert_eq!(keywords, Vec::<String>::new());
-}
-
-#[test]
-fn test_extract_keywords_zero_count() {
-    let text = "This is a test of keyword extraction.";
-    let keywords = extract_keywords(text, 0);
-    assert_eq!(keywords, Vec::<String>::new());
-}
-
-#[test]
-fn test_tokenize_with_punctuation() {
-    let text = "Hello, world! This is a test. What about semi-colons; and dashes-?";
-    let tokens = tokenize(text);
-    assert_eq!(tokens, vec!["Hello", "world", "This", "is", "a", "test", "What", "about", "semi-colons", "and", "dashes"]);
-}
-
-#[test]
-fn test_normalize_text_with_numbers() {
-    let text = "Testing 123 with numbers 456.";
-    let normalized = normalize_text(text);
-    assert_eq!(normalized, "testing 123 with numbers 456.");
-}
-
-#[test]
-fn test_remove_stopwords_all_stopwords() {
-    let tokens = vec!["this", "is", "a", "the", "and", "of"];
-    let filtered = remove_stopwords(&tokens);
-    assert_eq!(filtered, Vec::<&str>::new());
-}
-
-#[test]
-fn test_stem_words_already_stemmed() {
-    let tokens = vec!["run", "jump", "program"];
-    let stemmed = stem_words(&tokens);
-    assert_eq!(stemmed, vec!["run".to_string(), "jump".to_string(), "program".to_string()]);
+    #[test]
+    fn test_paragraph_chunking() {
+        let config = TokenizerConfig::default();
+        let processor = TextProcessor::new(config, ChunkingStrategy::Paragraph);
+        
+        let text = "This is paragraph one.\n\nThis is paragraph two.\n\nThis is paragraph three.";
+        let chunks = processor.chunk(text);
+        
+        assert_eq!(chunks.len(), 3);
+        assert_eq!(chunks[0].content, "This is paragraph one.");
+        assert_eq!(chunks[1].content, "This is paragraph two.");
+        assert_eq!(chunks[2].content, "This is paragraph three.");
+    }
+    
+    #[test]
+    fn test_semantic_chunking() {
+        let config = TokenizerConfig::default();
+        let processor = TextProcessor::new(config, ChunkingStrategy::Semantic);
+        
+        let text = "# Introduction\nThis is an introduction.\n\n# Methods\nThese are the methods.\n\n# Results\nThese are the results.";
+        let chunks = processor.chunk(text);
+        
+        assert_eq!(chunks.len(), 3);
+        assert!(chunks[0].content.contains("Introduction"));
+        assert!(chunks[1].content.contains("Methods"));
+        assert!(chunks[2].content.contains("Results"));
+    }
+    
+    #[test]
+    fn test_metadata_extraction() {
+        let config = TokenizerConfig::default();
+        let processor = TextProcessor::new(config, ChunkingStrategy::FixedSize(100));
+        
+        let text = "Title: Test Document\nAuthor: Test Author\nDate: 2025-03-14\n\nThis is the content of the document.";
+        let metadata = processor.extract_metadata(text);
+        
+        assert_eq!(metadata.get("title"), Some(&"Test Document".to_string()));
+        assert_eq!(metadata.get("author"), Some(&"Test Author".to_string()));
+        assert_eq!(metadata.get("date"), Some(&"2025-03-14".to_string()));
+    }
+    
+    #[test]
+    fn test_chunk_with_metadata() {
+        let config = TokenizerConfig::default();
+        let processor = TextProcessor::new(config, ChunkingStrategy::FixedSize(100));
+        
+        let text = "Title: Test Document\nAuthor: Test Author\nDate: 2025-03-14\n\nThis is the content of the document.";
+        let chunks = processor.chunk_with_metadata(text);
+        
+        assert!(chunks.len() > 0);
+        
+        // Each chunk should have the same metadata
+        for chunk in &chunks {
+            assert_eq!(chunk.metadata.get("title"), Some(&"Test Document".to_string()));
+            assert_eq!(chunk.metadata.get("author"), Some(&"Test Author".to_string()));
+            assert_eq!(chunk.metadata.get("date"), Some(&"2025-03-14".to_string()));
+        }
+    }
+    
+    #[test]
+    fn test_custom_tokenizer_config() {
+        let config = TokenizerConfig {
+            lowercase: true,
+            remove_punctuation: true,
+            remove_stopwords: true,
+            ..Default::default()
+        };
+        let processor = TextProcessor::new(config, ChunkingStrategy::FixedSize(100));
+        
+        let text = "This is a test sentence with some punctuation!";
+        let tokens = processor.tokenize(text);
+        
+        // Stopwords like "this", "is", "a", "with", "some" should be removed
+        assert!(!tokens.contains(&"this".to_string()));
+        assert!(!tokens.contains(&"is".to_string()));
+        assert!(!tokens.contains(&"a".to_string()));
+        
+        // Punctuation should be removed
+        assert!(!tokens.contains(&"punctuation!".to_string()));
+        assert!(tokens.contains(&"punctuation".to_string()));
+    }
 }

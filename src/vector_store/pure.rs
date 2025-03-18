@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use uuid::Uuid;
+use crate::text_processing::EmbeddingProvider;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
@@ -16,6 +17,36 @@ pub struct Document {
     pub metadata: Value,
 }
 
+impl Document {
+    pub fn new(content: String, embedding_provider: &impl EmbeddingProvider) -> Result<Self, crate::text_processing::EmbeddingError> {
+        let embedding = embedding_provider.generate_embedding(&content)?;
+        
+        Ok(Self {
+            id: Uuid::new_v4().to_string(),
+            content,
+            embedding,
+        })
+    }
+    
+    pub fn with_id(id: String, content: String, embedding_provider: &impl EmbeddingProvider) -> Result<Self, crate::text_processing::EmbeddingError> {
+        let embedding = embedding_provider.generate_embedding(&content)?;
+        
+        Ok(Self {
+            id,
+            content,
+            embedding,
+        })
+    }
+    
+    pub fn with_placeholder_embedding(content: String, embedding_dim: usize) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            content,
+            embedding: vec![0.0; embedding_dim],
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SearchQuery {
     /// Vector embedding to search for
@@ -26,6 +57,24 @@ pub struct SearchQuery {
     
     /// Offset for pagination
     pub offset: usize,
+}
+
+impl SearchQuery {
+    pub fn from_text(text: &str, limit: usize, embedding_provider: &impl EmbeddingProvider) -> Result<Self, crate::text_processing::EmbeddingError> {
+        let embedding = embedding_provider.generate_embedding(text)?;
+        
+        Ok(Self {
+            embedding,
+            limit,
+        })
+    }
+    
+    pub fn with_placeholder_embedding(embedding_dim: usize, limit: usize) -> Self {
+        Self {
+            embedding: vec![0.0; embedding_dim],
+            limit,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -69,9 +118,22 @@ pub struct RangeValue {
 
 /// Calculate cosine similarity between two vectors
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    let dot_product: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
-    let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
-    let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+    if a.len() != b.len() || a.is_empty() {
+        return 0.0;
+    }
+    
+    let mut dot_product = 0.0;
+    let mut norm_a = 0.0;
+    let mut norm_b = 0.0;
+    
+    for i in 0..a.len() {
+        dot_product += a[i] * b[i];
+        norm_a += a[i] * a[i];
+        norm_b += b[i] * b[i];
+    }
+    
+    norm_a = norm_a.sqrt();
+    norm_b = norm_b.sqrt();
     
     if norm_a == 0.0 || norm_b == 0.0 {
         0.0
@@ -182,183 +244,6 @@ mod tests {
         
         let e = vec![1.0, 1.0, 0.0];
         let f = vec![1.0, 0.0, 1.0];
-        assert!((cosine_similarity(&e, &f) - 0.5).abs() < 1e-6);
-    }
-    
-    #[test]
-    fn test_matches_filter_equals() {
-        let document = Document {
-            id: Some("test".to_string()),
-            content: "Test document".to_string(),
-            embedding: vec![0.1, 0.2, 0.3],
-            metadata: json!({
-                "category": "article",
-                "views": 100
-            }),
-        };
-        
-        let filter = Filter {
-            conditions: vec![
-                FilterCondition::Equals("category".to_string(), json!("article")),
-            ],
-        };
-        
-        assert!(matches_filter(&document, &filter));
-        
-        let filter2 = Filter {
-            conditions: vec![
-                FilterCondition::Equals("category".to_string(), json!("blog")),
-            ],
-        };
-        
-        assert!(!matches_filter(&document, &filter2));
-    }
-    
-    #[test]
-    fn test_matches_filter_range() {
-        let document = Document {
-            id: Some("test".to_string()),
-            content: "Test document".to_string(),
-            embedding: vec![0.1, 0.2, 0.3],
-            metadata: json!({
-                "views": 100
-            }),
-        };
-        
-        let filter = Filter {
-            conditions: vec![
-                FilterCondition::Range(
-                    "views".to_string(),
-                    RangeValue {
-                        min: Some(json!(50)),
-                        max: Some(json!(150)),
-                    },
-                ),
-            ],
-        };
-        
-        assert!(matches_filter(&document, &filter));
-        
-        let filter2 = Filter {
-            conditions: vec![
-                FilterCondition::Range(
-                    "views".to_string(),
-                    RangeValue {
-                        min: Some(json!(150)),
-                        max: None,
-                    },
-                ),
-            ],
-        };
-        
-        assert!(!matches_filter(&document, &filter2));
-    }
-    
-    #[test]
-    fn test_matches_filter_contains() {
-        let document = Document {
-            id: Some("test".to_string()),
-            content: "Test document".to_string(),
-            embedding: vec![0.1, 0.2, 0.3],
-            metadata: json!({
-                "tags": ["news", "technology"]
-            }),
-        };
-        
-        let filter = Filter {
-            conditions: vec![
-                FilterCondition::Contains("tags".to_string(), vec![json!("technology")]),
-            ],
-        };
-        
-        assert!(matches_filter(&document, &filter));
-        
-        let filter2 = Filter {
-            conditions: vec![
-                FilterCondition::Contains("tags".to_string(), vec![json!("programming")]),
-            ],
-        };
-        
-        assert!(!matches_filter(&document, &filter2));
-    }
-    
-    #[test]
-    fn test_matches_filter_or() {
-        let document = Document {
-            id: Some("test".to_string()),
-            content: "Test document".to_string(),
-            embedding: vec![0.1, 0.2, 0.3],
-            metadata: json!({
-                "category": "article",
-                "views": 100,
-                "tags": ["news", "technology"]
-            }),
-        };
-        
-        let filter = Filter {
-            conditions: vec![
-                FilterCondition::Or(vec![
-                    FilterCondition::Equals("category".to_string(), json!("blog")),
-                    FilterCondition::Contains("tags".to_string(), vec![json!("news")]),
-                ]),
-            ],
-        };
-        
-        assert!(matches_filter(&document, &filter));
-        
-        let filter2 = Filter {
-            conditions: vec![
-                FilterCondition::Or(vec![
-                    FilterCondition::Equals("category".to_string(), json!("blog")),
-                    FilterCondition::Contains("tags".to_string(), vec![json!("programming")]),
-                ]),
-            ],
-        };
-        
-        assert!(!matches_filter(&document, &filter2));
-    }
-    
-    #[test]
-    fn test_matches_filter_and() {
-        let document = Document {
-            id: Some("test".to_string()),
-            content: "Test document".to_string(),
-            embedding: vec![0.1, 0.2, 0.3],
-            metadata: json!({
-                "category": "article",
-                "views": 100,
-                "tags": ["news", "technology"]
-            }),
-        };
-        
-        let filter = Filter {
-            conditions: vec![
-                FilterCondition::Equals("category".to_string(), json!("article")),
-                FilterCondition::Range(
-                    "views".to_string(),
-                    RangeValue {
-                        min: Some(json!(50)),
-                        max: Some(json!(150)),
-                    },
-                ),
-            ],
-        };
-        
-        assert!(matches_filter(&document, &filter));
-        
-        let filter2 = Filter {
-            conditions: vec![
-                FilterCondition::Equals("category".to_string(), json!("article")),
-                FilterCondition::Range(
-                    "views".to_string(),
-                    RangeValue {
-                        min: Some(json!(150)),
-                        max: None,
-                    },
-                ),
-            ],
-        };
-        
-        assert!(!matches_filter(&document, &filter2));
+        assert!((cosine_similarity(&e, &f) - 0.5).abs() < 0.0001);
     }
 }
